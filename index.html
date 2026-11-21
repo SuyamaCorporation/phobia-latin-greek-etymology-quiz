@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>恐怖症語源クイズ</title>
+<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-violet-950 min-h-screen p-4">
+<div class="max-w-lg mx-auto">
+  <h1 class="text-2xl font-bold text-violet-200 text-center mb-1">恐怖症語源クイズ</h1>
+  <p class="text-violet-500 text-center text-sm mb-4">ギリシャ語・ラテン語語源から恐怖症名を推測</p>
+
+  <div class="flex gap-2 mb-4">
+    <button id="mode-a" onclick="setMode('name2fear')" class="flex-1 py-2 rounded-lg text-sm font-bold bg-violet-700 text-white">名称→恐怖症</button>
+    <button id="mode-b" onclick="setMode('fear2name')" class="flex-1 py-2 rounded-lg text-sm font-bold bg-violet-900 text-violet-400">恐怖症→名称</button>
+  </div>
+
+  <div class="bg-violet-900 rounded-xl p-3 mb-4 flex justify-between text-sm">
+    <span class="text-violet-300">スコア: <span id="score-val">0</span></span>
+    <span class="text-violet-300">問題: <span id="q-num">1</span>/30</span>
+    <span class="text-violet-300">正答率: <span id="accuracy">0</span>%</span>
+  </div>
+
+  <div id="quiz-box" class="bg-violet-900 rounded-2xl p-5"></div>
+
+  <button onclick="startQuiz()" class="w-full mt-4 bg-violet-700 hover:bg-violet-600 text-white py-2 rounded-xl font-bold">リスタート</button>
+</div>
+
+<script>
+const phobias = [
+  { name:'Acrophobia', fear:'高所', root:'ギリシャ語 akron（頂点）+ phobos（恐怖）', example:'高いところが怖い' },
+  { name:'Agoraphobia', fear:'広場・群衆', root:'ギリシャ語 agora（広場）+ phobos', example:'開けた空間・人混みへの恐怖' },
+  { name:'Arachnophobia', fear:'クモ', root:'ギリシャ語 arachne（クモ）+ phobos', example:'最も一般的な恐怖症のひとつ' },
+  { name:'Claustrophobia', fear:'閉所', root:'ラテン語 claustrum（閉じた場所）+ phobos', example:'エレベーターや狭い部屋が怖い' },
+  { name:'Cynophobia', fear:'犬', root:'ギリシャ語 kyon（犬）+ phobos', example:'犬への恐怖' },
+  { name:'Entomophobia', fear:'昆虫', root:'ギリシャ語 entomon（虫）+ phobos', example:'虫全般への恐怖' },
+  { name:'Germophobia', fear:'細菌・汚染', root:'ラテン語 germen（種・芽）+ phobos', example:'不潔への強迫的恐怖' },
+  { name:'Hemophobia', fear:'血液', root:'ギリシャ語 haima（血）+ phobos', example:'血を見ることへの恐怖' },
+  { name:'Hydrophobia', fear:'水', root:'ギリシャ語 hydor（水）+ phobos', example:'水・水泳への恐怖' },
+  { name:'Mysophobia', fear:'汚物・汚染', root:'ギリシャ語 mysos（不潔）+ phobos', example:'不潔への恐怖' },
+  { name:'Necrophobia', fear:'死体・死', root:'ギリシャ語 nekros（死体）+ phobos', example:'死や死体への恐怖' },
+  { name:'Nyctophobia', fear:'暗闇', root:'ギリシャ語 nyx（夜）+ phobos', example:'暗い場所への恐怖' },
+  { name:'Ophidiophobia', fear:'ヘビ', root:'ギリシャ語 ophis（ヘビ）+ phobos', example:'ヘビへの恐怖' },
+  { name:'Pyrophobia', fear:'火', root:'ギリシャ語 pyr（火）+ phobos', example:'火・炎への恐怖' },
+  { name:'Sociophobia', fear:'社会・他者', root:'ラテン語 socius（仲間）+ phobos', example:'社会不安症' },
+  { name:'Thanatophobia', fear:'死・死への不安', root:'ギリシャ語 Thanatos（死の神）+ phobos', example:'死への強い恐怖' },
+  { name:'Trypophobia', fear:'集合した穴・孔', root:'ギリシャ語 trype（穴）+ phobos', example:'蜂の巣状のパターンへの嫌悪' },
+  { name:'Xenophobia', fear:'外国人・異質なもの', root:'ギリシャ語 xenos（外国人）+ phobos', example:'異文化・外国人への恐怖・嫌悪' },
+  { name:'Zoophobia', fear:'動物全般', root:'ギリシャ語 zoon（動物）+ phobos', example:'動物全般への恐怖' },
+  { name:'Ailurophobia', fear:'ネコ', root:'ギリシャ語 ailouros（ネコ）+ phobos', example:'ネコへの恐怖' },
+  { name:'Alektorophobia', fear:'ニワトリ', root:'ギリシャ語 alektor（ニワトリ）+ phobos', example:'ニワトリへの珍しい恐怖' },
+  { name:'Ancraophobia', fear:'風', root:'ギリシャ語 anemos（風）+ phobos', example:'強風への恐怖' },
+  { name:'Anthophobia', fear:'花', root:'ギリシャ語 anthos（花）+ phobos', example:'花・花粉への恐怖' },
+  { name:'Apiphobia', fear:'ハチ', root:'ラテン語 apis（ハチ）+ phobos', example:'ミツバチ・スズメバチへの恐怖' },
+  { name:'Astraphobia', fear:'雷・稲妻', root:'ギリシャ語 astrape（稲妻）+ phobos', example:'雷雨への恐怖' },
+  { name:'Atychiphobia', fear:'失敗', root:'ギリシャ語 atyches（不運な）+ phobos', example:'失敗への過剰な恐れ' },
+  { name:'Automatonophobia', fear:'人形・マネキン', root:'ギリシャ語 automaton（自動人形）+ phobos', example:'動く人形・ロボットへの恐怖' },
+  { name:'Nomophobia', fear:'スマートフォンなし', root:'No Mobile Phone + phobos（現代語）', example:'スマホ圏外・電池切れへの不安' },
+  { name:'Phobophobia', fear:'恐怖症そのもの', root:'phobos + phobos（恐怖の恐怖）', example:'パニック発作への恐れ' },
+  { name:'Hippopotomonstrosesquipedaliophobia', fear:'長い単語', root:'hippo（大きい）+ monstro（怪物的）+ 語源混合', example:'この単語名自体が恐怖症の皮肉' },
+];
+
+let mode = 'name2fear';
+let currentQ = 0;
+let score = 0;
+let answered = false;
+let deck = [];
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('mode-a').className = m === 'name2fear'
+    ? 'flex-1 py-2 rounded-lg text-sm font-bold bg-violet-700 text-white'
+    : 'flex-1 py-2 rounded-lg text-sm font-bold bg-violet-900 text-violet-400';
+  document.getElementById('mode-b').className = m === 'fear2name'
+    ? 'flex-1 py-2 rounded-lg text-sm font-bold bg-violet-700 text-white'
+    : 'flex-1 py-2 rounded-lg text-sm font-bold bg-violet-900 text-violet-400';
+  startQuiz();
+}
+
+function startQuiz() {
+  deck = [...phobias].sort(() => Math.random() - 0.5);
+  currentQ = 0; score = 0; answered = false;
+  updateStats();
+  showQuestion();
+}
+
+function updateStats() {
+  document.getElementById('score-val').textContent = score;
+  document.getElementById('q-num').textContent = Math.min(currentQ + 1, deck.length);
+  const acc = currentQ > 0 ? Math.round(score / currentQ * 100) : 0;
+  document.getElementById('accuracy').textContent = acc;
+}
+
+function showQuestion() {
+  if (currentQ >= deck.length) {
+    showComplete();
+    return;
+  }
+  answered = false;
+  const p = deck[currentQ];
+  const wrongChoices = deck.filter((_, i) => i !== currentQ).sort(() => Math.random() - 0.5).slice(0, 3);
+  const allChoices = [p, ...wrongChoices].sort(() => Math.random() - 0.5);
+
+  const box = document.getElementById('quiz-box');
+  box.innerHTML = ''; // xss-ok: static template, no user input
+
+  const qDiv = document.createElement('div');
+  qDiv.className = 'mb-4';
+  const prompt = document.createElement('div');
+  prompt.className = 'text-violet-300 text-sm mb-1';
+  prompt.textContent = mode === 'name2fear' ? 'この恐怖症が指す恐怖は？' : 'この恐怖に対応する恐怖症名は？';
+  const question = document.createElement('div');
+  question.className = 'text-3xl font-bold text-violet-100 mb-2';
+  question.textContent = mode === 'name2fear' ? p.name : p.fear;
+  const root = document.createElement('div');
+  root.className = 'text-violet-500 text-xs';
+  root.textContent = '語源: ' + p.root;
+  qDiv.appendChild(prompt);
+  qDiv.appendChild(question);
+  qDiv.appendChild(root);
+  box.appendChild(qDiv);
+
+  allChoices.forEach(choice => {
+    const btn = document.createElement('button');
+    btn.className = 'w-full text-left bg-violet-800 hover:bg-violet-700 text-violet-200 p-3 rounded-xl mb-2 text-sm transition';
+    btn.textContent = mode === 'name2fear' ? choice.fear : choice.name;
+    btn.addEventListener('click', () => {
+      if (answered) return;
+      answered = true;
+      const correct = choice === p;
+      if (correct) score++;
+      btn.className = `w-full text-left p-3 rounded-xl mb-2 text-sm ${correct ? 'bg-green-800 text-green-200' : 'bg-red-800 text-red-200'}`;
+      if (!correct) {
+        // Show correct answer
+        box.querySelectorAll('button').forEach(b => {
+          if (b.textContent === (mode === 'name2fear' ? p.fear : p.name)) {
+            b.className = 'w-full text-left bg-green-800 text-green-200 p-3 rounded-xl mb-2 text-sm';
+          }
+        });
+      }
+      // Show example
+      const exDiv = document.createElement('div');
+      exDiv.className = 'bg-violet-800 rounded-xl p-3 mt-2 text-xs text-violet-300';
+      exDiv.textContent = '📝 ' + p.example;
+      box.appendChild(exDiv);
+
+      currentQ++;
+      updateStats();
+      setTimeout(showQuestion, 1800);
+    });
+    box.appendChild(btn);
+  });
+}
+
+function showComplete() {
+  const box = document.getElementById('quiz-box');
+  box.innerHTML = ''; // xss-ok: static template, no user input
+  const title = document.createElement('div');
+  title.className = 'text-3xl font-bold text-violet-200 text-center mb-3';
+  title.textContent = '完了！';
+  const result = document.createElement('div');
+  result.className = 'text-violet-300 text-center text-lg';
+  result.textContent = `${score}/${deck.length}問正解`;
+  box.appendChild(title);
+  box.appendChild(result);
+}
+
+startQuiz();
+</script>
+</body>
+</html>
